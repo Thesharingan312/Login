@@ -63,6 +63,10 @@ public class FormularioRegistro extends JFrame {
         campoCorreo = new JTextField(20);
         agregarComponenteFormulario(panelFormulario, campoCorreo, gbc, 1, fila++);
 
+        agregarComponenteFormulario(panelFormulario, new JLabel("Dirección:"), gbc, 0, fila);
+        campoCorreo = new JTextField(20);
+        agregarComponenteFormulario(panelFormulario, campoCorreo, gbc, 1, fila++);
+
         agregarComponenteFormulario(panelFormulario, new JLabel("Teléfono:"), gbc, 0, fila);
         campoTelefono = new JTextField(12);
         agregarComponenteFormulario(panelFormulario, campoTelefono, gbc, 1, fila++);
