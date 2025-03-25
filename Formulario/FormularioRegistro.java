@@ -16,9 +16,15 @@ public class FormularioRegistro extends JFrame {
     private JTextField campoApellidos;
     private JTextField campoDNI;
     private JTextField campoCorreo;
+    private JTextField campoDireccion; // Se agrega el nuevo campo Dirección de Emmanuel
     private JTextField campoTelefono;
     private JButton botonAceptar;
     private JButton botonLimpiar;
+
+    // Instancias de CapitalizeFilter para cada campo
+    private CapitalizeFilter capitalizeNombreFilter = new CapitalizeFilter();
+    private CapitalizeFilter capitalizeApellidosFilter = new CapitalizeFilter();
+    private CapitalizeFilter capitalizeDireccionFilter = new CapitalizeFilter();
 
     public FormularioRegistro() {
         inicializarComponentes();
@@ -64,8 +70,10 @@ public class FormularioRegistro extends JFrame {
         agregarComponenteFormulario(panelFormulario, campoCorreo, gbc, 1, fila++);
 
         agregarComponenteFormulario(panelFormulario, new JLabel("Dirección:"), gbc, 0, fila);
-        campoCorreo = new JTextField(20);
-        agregarComponenteFormulario(panelFormulario, campoCorreo, gbc, 1, fila++);
+        campoDireccion = new JTextField(20);
+        agregarComponenteFormulario(panelFormulario, campoDireccion, gbc, 1, fila++);
+        ((PlainDocument) campoDireccion.getDocument()).setDocumentFilter(capitalizeDireccionFilter); // Capitalizar Dirección
+
 
         agregarComponenteFormulario(panelFormulario, new JLabel("Teléfono:"), gbc, 0, fila);
         campoTelefono = new JTextField(12);
@@ -118,10 +126,11 @@ public class FormularioRegistro extends JFrame {
         String apellidos = campoApellidos.getText().trim();
         String dni = campoDNI.getText().trim();
         String correo = campoCorreo.getText().trim();
+        String direccion = campoDireccion.getText().trim(); //se obtiene el valor del nuevo campo Dirección
         String telefono = campoTelefono.getText().trim();
 
         // Verificar si algún campo está vacío
-        if (nombre.isEmpty() || apellidos.isEmpty() || dni.isEmpty() || correo.isEmpty() || telefono.isEmpty()) {
+        if (nombre.isEmpty() || apellidos.isEmpty() || dni.isEmpty() || correo.isEmpty() || direccion.isEmpty() || telefono.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Todos los campos son obligatorios", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -194,7 +203,13 @@ public class FormularioRegistro extends JFrame {
         campoApellidos.setText("");
         campoDNI.setText("");
         campoCorreo.setText("");
+        campoDireccion.setText(""); // Se limpia el campo de Dirección
         campoTelefono.setText("");
+
+        // Resetear los filtros de capitalización
+        capitalizeNombreFilter.reset();
+        capitalizeApellidosFilter.reset();
+        capitalizeDireccionFilter.reset();
     }
 
     /**
@@ -216,29 +231,32 @@ public class FormularioRegistro extends JFrame {
     }
 
     /**
-     * Clase interna para capitalizar la primera letra de cada palabra.
+     * Clase interna para capitalizar la primera letra de cada palabra en un JTextField.
      */
     private static class CapitalizeFilter extends DocumentFilter {
+        private boolean isFirstLetter = true;
+
         @Override
-        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
-            if (string == null) {
-                return;
+        public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr) throws BadLocationException {
+            if (text != null && text.length() > 0 && isFirstLetter) {
+                text = text.substring(0, 1).toUpperCase() + text.substring(1);
+                isFirstLetter = false; // Desactivar después de la primera letra
             }
-            if (fb.getDocument().getLength() == 0) {
-                string = string.toUpperCase();
-            }
-            super.insertString(fb, offset, string, attr);
+            super.insertString(fb, offset, text, attr);
         }
 
         @Override
         public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
-            if (text == null) {
-                return;
-            }
-            if (fb.getDocument().getLength() == 0) {
-                text = text.toUpperCase();
+            if (text != null && text.length() > 0 && isFirstLetter) {
+                text = text.substring(0, 1).toUpperCase() + text.substring(1);
+                isFirstLetter = false; // Desactivar después de la primera letra
             }
             super.replace(fb, offset, length, text, attrs);
+        }
+
+        // Reiniciar el estado cuando se limpie el campo
+        public void reset() {
+            isFirstLetter = true;
         }
     }
 
