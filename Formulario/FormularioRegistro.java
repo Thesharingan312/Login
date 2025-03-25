@@ -197,7 +197,7 @@ public class FormularioRegistro extends JFrame {
      * Configura las propiedades principales de la ventana.
      */
     private void configurarVentana() {
-        setTitle("Formulario de registro");          // Título de la ventana
+        setTitle("Formulario de registro Compartido");          // Título de la ventana
         setSize(ANCHO, ALTO);                        // Dimensiones de la ventana
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Cerrar aplicación al cerrar ventana
         setLocationRelativeTo(null);                // Centrar ventana en pantalla
