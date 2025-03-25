@@ -109,7 +109,7 @@ public class FormularioRegistro extends JFrame {
 
         // Arreglo de campos para una inicialización más eficiente
         CampoRegistro[] campos = {
-            campoNombre, campoApellidos, campoDNI, 
+            campoNombre, campoApellidos, campoDNI,
             campoCorreo, campoDireccion, campoTelefono
         };
 

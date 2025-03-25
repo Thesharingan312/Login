@@ -7,6 +7,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
@@ -36,10 +37,24 @@ public class LoginUI {
         this.theme = new UITheme();
         
         // Configuración de la ventana principal
+        
         frame = new JFrame("Inicio de Sesión");
-        frame.setSize(400, 400);  // Un poco más alto para los componentes adicionales
+        frame.setSize(400, 480);  // Modificación para que se vean todos los campos
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
+        frame.setResizable(false); //Para bloquear el redimensionamiento
+
+        // Cargar ícono personalizado
+        try {
+            ImageIcon icono = new ImageIcon(getClass().getResource("/icono2.png"));
+            if (icono.getImage() != null) {
+                frame.setIconImage(icono.getImage());
+            } else {
+                System.err.println("No se pudo cargar el ícono. Verifique la ruta del archivo.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error al cargar el ícono: " + e.getMessage());
+        }
         
         // Creación de los componentes
         createAndSetupComponents();
