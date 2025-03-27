@@ -1,19 +1,25 @@
 package registro;
+
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 import javax.swing.*;
+import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.PlainDocument;
-import java.util.regex.Pattern;
 
 /**
  * Clase de validación para los campos del formulario.
  */
 class Validador {
     private static final Pattern PATRON_DNI = Pattern.compile("\\d{8}[A-Z]");
-    private static final Pattern PATRON_CORREO = Pattern.compile("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$");
+    private static final Pattern PATRON_CORREO = Pattern.compile("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,40}$");
     private static final Pattern PATRON_TELEFONO = Pattern.compile("\\d{9}");
+    // Patrón para contraseña: mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 dígito y 1 carácter especial.
+    private static final Pattern PATRON_CONTRASENA = Pattern.compile("^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]).{8,}$");
 
     /**
      * Valida el DNI con el algoritmo de letra de control.
@@ -48,6 +54,16 @@ class Validador {
     public static boolean validarTelefono(String telefono) {
         return PATRON_TELEFONO.matcher(telefono).matches();
     }
+    
+    /**
+     * Valida la contraseña asegurando un mínimo de 8 caracteres, 
+     * al menos una mayúscula, una minúscula, un dígito y un carácter especial.
+     * @param contrasena La contraseña a validar.
+     * @return true si la contraseña cumple el estándar.
+     */
+    public static boolean validarContrasena(String contrasena) {
+        return PATRON_CONTRASENA.matcher(contrasena).matches();
+    }
 }
 
 /**
@@ -56,15 +72,20 @@ class Validador {
 public class FormularioRegistro extends JFrame {
     // Dimensiones de la ventana
     private static final int ANCHO = 400;
-    private static final int ALTO = 350;
+    private static final int ALTO = 400; // Aumentado para incluir nuevos campos
 
-    // Campos de registro
+    // Campos de registro originales
     private final CampoRegistro campoNombre;
     private final CampoRegistro campoApellidos;
     private final CampoRegistro campoDNI;
     private final CampoRegistro campoCorreo;
     private final CampoRegistro campoDireccion;
     private final CampoRegistro campoTelefono;
+
+    // Nuevos campos para contraseña
+    private final JPasswordField campoContrasena;
+    private final JPasswordField campoConfirmarContrasena;
+    private final JCheckBox checkMostrarContrasena;
 
     // Botones del formulario
     private final JButton botonAceptar;
@@ -74,7 +95,7 @@ public class FormularioRegistro extends JFrame {
      * Constructor del formulario de registro.
      */
     public FormularioRegistro() {
-        // Inicializar campos con sus respectivas configuraciones
+        // Inicializar campos originales
         campoNombre = new CampoRegistro("Nombre", true);
         campoApellidos = new CampoRegistro("Apellidos", true);
         campoDNI = new CampoRegistro("DNI", false);
@@ -82,20 +103,105 @@ public class FormularioRegistro extends JFrame {
         campoDireccion = new CampoRegistro("Dirección", true);
         campoTelefono = new CampoRegistro("Teléfono", false);
 
+        // Inicializar nuevos campos de contraseña
+        campoContrasena = new JPasswordField(15);
+        campoConfirmarContrasena = new JPasswordField(15);
+        // Usamos el carácter '●' (Unicode 25CF) para ocultar la contraseña
+        campoContrasena.setEchoChar('\u25CF');
+        campoConfirmarContrasena.setEchoChar('\u25CF');
+        checkMostrarContrasena = new JCheckBox("Mostrar contraseñas");
+
         botonAceptar = new JButton("Aceptar");
         botonLimpiar = new JButton("Limpiar");
 
+        // MEJORA AÑADIDA: Aplicar filtros de formato a DNI y Teléfono
+        aplicarFiltrosEspeciales();
+
+        // Inicializar y organizar los componentes, respetando el diseño original
         inicializarComponentes();
         configurarVentana();
         configurarEventos();
     }
 
     /**
-     * Configura los eventos de los botones.
+     * Configura los eventos de los botones y componentes.
      */
     private void configurarEventos() {
         botonLimpiar.addActionListener(e -> limpiarFormulario());
         botonAceptar.addActionListener(e -> validarFormulario());
+        checkMostrarContrasena.addActionListener(e -> alternarVisibilidadContrasena());
+    }
+    
+    /**
+     * Alterna la visibilidad de los campos de contraseña.
+     * Si está seleccionado, muestra la contraseña en texto normal; de lo contrario, la oculta con '●'.
+     */
+    private void alternarVisibilidadContrasena() {
+        char echoChar = checkMostrarContrasena.isSelected() ? '\u0000' : '\u25CF';
+        campoContrasena.setEchoChar(echoChar);
+        campoConfirmarContrasena.setEchoChar(echoChar);
+    }
+
+    /**
+     * Aplica filtros de formato a campos específicos (DNI y Teléfono).
+     */
+    private void aplicarFiltrosEspeciales() {
+        // Filtro para DNI: 8 números + 1 letra mayúscula
+        ((AbstractDocument) campoDNI.getCampo().getDocument()).setDocumentFilter(new DniFilter());
+        // Filtro para Teléfono: Solo permite dígitos
+        ((AbstractDocument) campoTelefono.getCampo().getDocument()).setDocumentFilter(new TelefonoFilter());
+    }
+
+    /**
+     * Valida todos los campos del formulario, incluidos los nuevos de contraseña.
+     */
+    private void validarFormulario() {
+        List<String> errores = new ArrayList<>();
+        // Validar que todos los campos originales sean completados
+        CampoRegistro[] obligatorios = {campoNombre, campoApellidos, campoDNI, campoCorreo, campoDireccion, campoTelefono};
+        for (CampoRegistro campo : obligatorios) {
+            if (campo.getCampo().getText().trim().isEmpty()) {
+                errores.add("Campo obligatorio: " + campo.getEtiqueta().getText());
+            }
+        }
+        // Validaciones específicas de los campos originales
+        if (!campoDNI.getCampo().getText().isEmpty() && !Validador.validarDNI(campoDNI.getCampo().getText())) {
+            errores.add("DNI inválido. Formato: 8 números + letra mayúscula.");
+        }
+        if (!campoCorreo.getCampo().getText().isEmpty() && !Validador.validarCorreo(campoCorreo.getCampo().getText())) {
+            errores.add("Formato de correo electrónico inválido.");
+        }
+        if (!campoTelefono.getCampo().getText().isEmpty() && !Validador.validarTelefono(campoTelefono.getCampo().getText())) {
+            errores.add("Teléfono debe tener 9 dígitos.");
+        }
+        // Validar que los campos de contraseña sean completados
+        String contrasena = new String(campoContrasena.getPassword());
+        String confirmarContrasena = new String(campoConfirmarContrasena.getPassword());
+        if (contrasena.trim().isEmpty()) {
+            errores.add("Campo obligatorio: Contraseña.");
+        }
+        if (confirmarContrasena.trim().isEmpty()) {
+            errores.add("Campo obligatorio: Confirmar Contraseña.");
+        }
+        // Validar la seguridad de la contraseña y que ambas coincidan
+        if (!contrasena.trim().isEmpty() && !Validador.validarContrasena(contrasena)) {
+            errores.add("La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y un carácter especial.");
+        }
+        if (!contrasena.equals(confirmarContrasena)) {
+            errores.add("Las contraseñas no coinciden.");
+        }
+        
+        if (!errores.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                String.join("\n", errores), 
+                "Errores de validación", 
+                JOptionPane.ERROR_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, 
+                "Formulario enviado con éxito", 
+                "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            dispose();
+        }
     }
 
     /**
@@ -107,107 +213,55 @@ public class FormularioRegistro extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.anchor = GridBagConstraints.WEST;
-
-        // Arreglo de campos para una inicialización más eficiente
-        CampoRegistro[] campos = {
-            campoNombre, campoApellidos, campoDNI,
-            campoCorreo, campoDireccion, campoTelefono
-        };
-
-        // Añadir campos al formulario
+        
+        // Agregar los campos originales
+        CampoRegistro[] campos = {campoNombre, campoApellidos, campoDNI, campoCorreo, campoDireccion, campoTelefono};
         int fila = 0;
         for (CampoRegistro campo : campos) {
             agregarComponenteFormulario(panelFormulario, campo.getEtiqueta(), gbc, 0, fila);
             agregarComponenteFormulario(panelFormulario, campo.getCampo(), gbc, 1, fila++);
         }
-
-        // Configurar panel de botones
+        // Agregar el campo de Contraseña
+        agregarComponenteFormulario(panelFormulario, new JLabel("Contraseña:"), gbc, 0, fila);
+        agregarComponenteFormulario(panelFormulario, campoContrasena, gbc, 1, fila++);
+        // Agregar el campo de Confirmar Contraseña
+        agregarComponenteFormulario(panelFormulario, new JLabel("Confirmar Contraseña:"), gbc, 0, fila);
+        agregarComponenteFormulario(panelFormulario, campoConfirmarContrasena, gbc, 1, fila++);
+        // Agregar checkbox para mostrar/ocultar contraseña
+        agregarComponenteFormulario(panelFormulario, checkMostrarContrasena, gbc, 1, fila++);
+        
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         panelBotones.add(botonLimpiar);
         panelBotones.add(botonAceptar);
-
+        
         add(panelFormulario, BorderLayout.CENTER);
         add(panelBotones, BorderLayout.SOUTH);
-
-        // Establecer foco inicial
         campoNombre.getCampo().requestFocus();
     }
 
     /**
-     * Añade un componente al formulario con las restricciones de GridBagLayout.
+     * Agrega un componente al contenedor con las restricciones de GridBagLayout.
      */
-    private void agregarComponenteFormulario(Container container, JComponent component, 
-                                            GridBagConstraints gbc, int gridx, int gridy) {
+    private void agregarComponenteFormulario(Container container, JComponent component, GridBagConstraints gbc, int gridx, int gridy) {
         gbc.gridx = gridx;
         gbc.gridy = gridy;
         container.add(component, gbc);
     }
 
     /**
-     * Valida todos los campos del formulario antes de enviar.
-     */
-    private void validarFormulario() {
-        CampoRegistro[] campos = {
-            campoNombre, campoApellidos, campoDNI, 
-            campoCorreo, campoDireccion, campoTelefono
-        };
-
-        // Verificar campos vacíos
-        for (CampoRegistro campo : campos) {
-            if (campo.getCampo().getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, 
-                    "El campo " + campo.getEtiqueta().getText() + " es obligatorio", 
-                    "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-        }
-
-        // Validaciones específicas
-        if (!Validador.validarDNI(campoDNI.getCampo().getText())) {
-            JOptionPane.showMessageDialog(this, 
-                "DNI incorrecto. Debe tener 8 números y una letra mayúscula", 
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (!Validador.validarCorreo(campoCorreo.getCampo().getText())) {
-            JOptionPane.showMessageDialog(this, 
-                "Correo electrónico incorrecto", 
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (!Validador.validarTelefono(campoTelefono.getCampo().getText())) {
-            JOptionPane.showMessageDialog(this, 
-                "Teléfono incorrecto. Debe tener 9 dígitos", 
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Envío exitoso
-        JOptionPane.showMessageDialog(this, 
-            "Formulario enviado con éxito", 
-            "Éxito", JOptionPane.INFORMATION_MESSAGE);
-        
-        dispose();
-    }
-
-    /**
      * Limpia todos los campos del formulario.
      */
     private void limpiarFormulario() {
-        CampoRegistro[] campos = {
-            campoNombre, campoApellidos, campoDNI, 
-            campoCorreo, campoDireccion, campoTelefono
-        };
-
+        CampoRegistro[] campos = {campoNombre, campoApellidos, campoDNI, campoCorreo, campoDireccion, campoTelefono};
         for (CampoRegistro campo : campos) {
             campo.getCampo().setText("");
         }
+        campoContrasena.setText("");
+        campoConfirmarContrasena.setText("");
     }
 
     /**
-     * Configura las propiedades de la ventana.
+     * Configura las propiedades de la ventana, incluyendo el título, tamaño y el ícono.
      */
     private void configurarVentana() {
         setTitle("Formulario de Registro");
@@ -215,8 +269,6 @@ public class FormularioRegistro extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
-
-        // Cargar ícono personalizado
         try {
             ImageIcon icono = new ImageIcon(getClass().getResource("/icono.png"));
             if (icono.getImage() != null) {
@@ -230,29 +282,52 @@ public class FormularioRegistro extends JFrame {
     }
 
     /**
-     * Clase interna para campos de registro con etiqueta y campo de texto.
+     * Método principal para iniciar la aplicación.
      */
-    private static class CampoRegistro {
-        private final JLabel etiqueta;
-        private final JTextField campo;
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new FormularioRegistro().setVisible(true));
+    }
 
-        /**
-         * Constructor de CampoRegistro.
-         * @param texto Texto de la etiqueta
-         * @param capitalizar Indica si se debe capitalizar el primer carácter
-         */
-        public CampoRegistro(String texto, boolean capitalizar) {
-            etiqueta = new JLabel(texto + ":");
-            campo = new JTextField(15);
-            
-            if (capitalizar) {
-                PlainDocument doc = (PlainDocument) campo.getDocument();
-                doc.setDocumentFilter(new CapitalizeFilter());
+    // ================== CLASES INTERNAS ================== //
+
+    /**
+     * Filtro para DNI: Permite 8 números seguidos de 1 letra mayúscula.
+     */
+    private static class DniFilter extends DocumentFilter {
+        @Override
+        public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr) throws BadLocationException {
+            String newText = text.replaceAll("[^\\dA-Za-z]", "").toUpperCase();
+            super.insertString(fb, offset, newText, attr);
+            formatearDNI(fb);
+        }
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+            String newText = text.replaceAll("[^\\dA-Za-z]", "").toUpperCase();
+            super.replace(fb, offset, length, newText, attrs);
+            formatearDNI(fb);
+        }
+        private void formatearDNI(FilterBypass fb) throws BadLocationException {
+            String contenido = fb.getDocument().getText(0, fb.getDocument().getLength());
+            if (contenido.length() > 8) {
+                String numeros = contenido.substring(0, 8).replaceAll("[^\\d]", "");
+                String letra = contenido.substring(8).replaceAll("[^A-Z]", "");
+                super.replace(fb, 0, fb.getDocument().getLength(), numeros + letra, null);
             }
         }
+    }
 
-        public JLabel getEtiqueta() { return etiqueta; }
-        public JTextField getCampo() { return campo; }
+    /**
+     * Filtro para teléfono: Solo permite dígitos.
+     */
+    private static class TelefonoFilter extends DocumentFilter {
+        @Override
+        public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr) throws BadLocationException {
+            super.insertString(fb, offset, text.replaceAll("[^\\d]", ""), attr);
+        }
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+            super.replace(fb, offset, length, text.replaceAll("[^\\d]", ""), attrs);
+        }
     }
 
     /**
@@ -266,7 +341,6 @@ public class FormularioRegistro extends JFrame {
             }
             super.insertString(fb, offset, string, attr);
         }
-
         @Override
         public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
             if (text != null && fb.getDocument().getLength() == 0) {
@@ -277,12 +351,25 @@ public class FormularioRegistro extends JFrame {
     }
 
     /**
-     * Método principal para iniciar la aplicación.
+     * Clase interna para campos de registro que contiene una etiqueta y un campo de texto.
      */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new FormularioRegistro().setVisible(true));
+    private static class CampoRegistro {
+        private final JLabel etiqueta;
+        private final JTextField campo;
+        /**
+         * Constructor de CampoRegistro.
+         * @param texto Texto para la etiqueta.
+         * @param capitalizar Si es true, capitaliza el primer carácter del campo.
+         */
+        public CampoRegistro(String texto, boolean capitalizar) {
+            etiqueta = new JLabel(texto + ":");
+            campo = new JTextField(15);
+            if (capitalizar) {
+                PlainDocument doc = (PlainDocument) campo.getDocument();
+                doc.setDocumentFilter(new CapitalizeFilter());
+            }
+        }
+        public JLabel getEtiqueta() { return etiqueta; }
+        public JTextField getCampo() { return campo; }
     }
 }
-
-
-
