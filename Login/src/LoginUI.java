@@ -5,7 +5,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -18,7 +17,6 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-
 import registro.FormularioRegistro;
 
 /**
@@ -169,12 +167,14 @@ public class LoginUI {
         
         // Botón para registro
         JButton registerButton = new JButton("Crear cuenta");
-        registerButton.setFont(new Font("Arial", Font.PLAIN, 12));
-        registerButton.setBackground(null);
-        registerButton.setBorderPainted(false);
-        registerButton.setForeground(theme.getAccentColor());
-        registerButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        registerButton.setFocusPainted(false);
+        theme.applyButtonStyle(registerButton);
+
+        // registerButton.setFont(new Font("Arial", Font.PLAIN, 12));
+        // registerButton.setBackground(null);
+        // registerButton.setBorderPainted(false);
+        // registerButton.setForeground(theme.getAccentColor());
+        // registerButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // registerButton.setFocusPainted(false);
         // Acción al pulsar el botón
         registerButton.addActionListener(e -> openRegisterForm());
         // Agregarlo al panel
