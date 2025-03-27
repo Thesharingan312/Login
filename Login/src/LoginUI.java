@@ -19,6 +19,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import registro.FormularioRegistro;
+
 /**
  * Clase que gestiona la interfaz de usuario para el inicio de sesión
  */
@@ -39,7 +41,7 @@ public class LoginUI {
         // Configuración de la ventana principal
         
         frame = new JFrame("Inicio de Sesión");
-        frame.setSize(400, 480);  // Modificación para que se vean todos los campos
+        frame.setSize(400, 550);  // Modificación para que se vean todos los campos
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
         frame.setResizable(false); //Para bloquear el redimensionamiento
@@ -164,6 +166,19 @@ public class LoginUI {
         mainPanel.add(rememberUserCheck, gbc);
         mainPanel.add(lockMessageLabel, gbc);
         mainPanel.add(loginButton, gbc);
+        
+        // Botón para registro
+        JButton registerButton = new JButton("Crear cuenta");
+        registerButton.setFont(new Font("Arial", Font.PLAIN, 12));
+        registerButton.setBackground(null);
+        registerButton.setBorderPainted(false);
+        registerButton.setForeground(theme.getAccentColor());
+        registerButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        registerButton.setFocusPainted(false);
+        // Acción al pulsar el botón
+        registerButton.addActionListener(e -> openRegisterForm());
+        // Agregarlo al panel
+        mainPanel.add(registerButton, gbc);
         
         // Agregar panel a la ventana con color de fondo adecuado
         frame.getContentPane().setBackground(theme.getBackgroundColor());
@@ -379,6 +394,19 @@ public class LoginUI {
                 lockTimer.stop();
             }
         }
+    }
+    /**
+     * Abre la ventana de registro
+     */
+    private void openRegisterForm() {
+        // Cerrar la ventana de login si quieres
+        frame.dispose();
+        
+        // Crear y mostrar la ventana de registro
+        SwingUtilities.invokeLater(() -> {
+            FormularioRegistro registro = new FormularioRegistro(); // Asegúrate que exista
+            registro.setVisible(true); // O el método que uses para mostrarla
+        });
     }
     
     /**
