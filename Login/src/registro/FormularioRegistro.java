@@ -164,6 +164,17 @@ public class FormularioRegistro extends JFrame {
                 errores.add("Campo obligatorio: " + campo.getEtiqueta().getText());
             }
         }
+        // Validar que el campo de dirección tenga al menos 5 caracteres
+        if (campoDireccion.getCampo().getText().length() < 5) {
+            errores.add("La dirección debe tener al menos 5 caracteres.");
+        }
+        // Obtener el nombre completo y las contraseñas
+        String nombre = campoNombre.getCampo().getText();
+        String apellidos = campoApellidos.getCampo().getText();
+        String nombreCompleto = nombre + " " + apellidos;
+        
+        String contrasena = new String(campoContrasena.getPassword());
+        String confirmarContrasena = new String(campoConfirmarContrasena.getPassword());
         // Validaciones específicas de los campos originales
         if (!campoDNI.getCampo().getText().isEmpty() && !Validador.validarDNI(campoDNI.getCampo().getText())) {
             errores.add("DNI inválido. Formato: 8 números + letra mayúscula.");
@@ -197,13 +208,24 @@ public class FormularioRegistro extends JFrame {
                 "Errores de validación", 
                 JOptionPane.ERROR_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(this, 
-                "Formulario enviado con éxito", 
-                "Éxito", JOptionPane.INFORMATION_MESSAGE);
-            dispose();
+            // Crear servicio de autenticación para registro
+            AuthenticationService authService = new AuthenticationService();
+            
+            // Intentar registrar al usuario
+            boolean registroExitoso = authService.register(nombreCompleto, contrasena);
+            
+            if (registroExitoso) {
+                JOptionPane.showMessageDialog(this, 
+                    "Formulario enviado con éxito. Usuario registrado.", 
+                    "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "El usuario ya existe. Por favor, elija otro nombre.", 
+                    "Error de Registro", 
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
-
     /**
      * Inicializa y organiza los componentes del formulario.
      */

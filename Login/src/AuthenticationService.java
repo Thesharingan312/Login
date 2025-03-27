@@ -1,3 +1,4 @@
+import AuthenticationService;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -5,20 +6,26 @@ import java.util.prefs.Preferences;
 import java.time.LocalDateTime;
 
 public class AuthenticationService {
-    private final String username;
-    private final byte[] encryptedPassword;
+    private  String username;
+    private  String encryptedPassword;
     private int failedAttempts;
     private LocalDateTime lockUntil;
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCK_DURATION_SECONDS = 30;
     
     public AuthenticationService(String username, String password) {
-        this.username = username;
-        this.encryptedPassword = encryptPassword(password);
+        this.username = "";
+        this.encryptedPassword = encryptPassword("");
         this.failedAttempts = 0;
         this.lockUntil = null;
     }
-    
+    public AuthenticationService() {
+        // Inicializa con valores predeterminados
+        this.username = "";
+        this.encryptedPassword = encryptPassword("");
+        this.failedAttempts = 0;
+        this.lockUntil = null;
+    }
     /**
      * Verifica las credenciales del usuario
      */
@@ -28,10 +35,15 @@ public class AuthenticationService {
             return false;
         }
         
-        boolean isAuthenticated = inputUsername.equals(username) && 
-                Arrays.equals(encryptPassword(inputPassword), encryptedPassword);
+        // Encriptar la contraseña de entrada para comparación
+        String encryptedInputPassword = encryptPassword(inputPassword);
+        
+        // Usar UserStorageManager para validar
+        boolean isAuthenticated = UserStorageManager.validateUser(inputUsername, encryptedInputPassword);
         
         if (isAuthenticated) {
+            this.username = inputUsername;
+            this.encryptedPassword = encryptedInputPassword;
             // Reiniciar contador de intentos fallidos si la autenticación es exitosa
             resetFailedAttempts();
             return true;
@@ -47,6 +59,51 @@ public class AuthenticationService {
             return false;
         }
     }
+    
+    /**
+     * Registra un nuevo usuario
+     */
+    public boolean register(String username, String password) {
+        // Verificar si el usuario ya existe
+        if (UserStorageManager.userExists(username)) {
+            return false;
+        }
+        
+        // Encriptar la contraseña
+        String encryptedPassword = encryptPassword(password);
+        
+        // Guardar el usuario
+        return UserStorageManager.saveUser(username, encryptedPassword);
+    }
+    
+    // /**
+    //  * Verifica las credenciales del usuario
+    //  */
+    // public boolean authenticate(String inputUsername, String inputPassword) {
+    //     // Verificar si la cuenta está bloqueada
+    //     if (isLocked()) {
+    //         return false;
+    //     }
+        
+    //     boolean isAuthenticated = inputUsername.equals(username) && 
+    //             Arrays.equals(encryptPassword(inputPassword), encryptedPassword);
+        
+    //     if (isAuthenticated) {
+    //         // Reiniciar contador de intentos fallidos si la autenticación es exitosa
+    //         resetFailedAttempts();
+    //         return true;
+    //     } else {
+    //         // Incrementar contador de intentos fallidos
+    //         failedAttempts++;
+            
+    //         // Bloquear la cuenta si se excede el número máximo de intentos
+    //         if (failedAttempts >= MAX_ATTEMPTS) {
+    //             lockAccount();
+    //         }
+            
+    //         return false;
+    //     }
+    // }
     
     /**
      * Verifica si la cuenta está bloqueada
@@ -90,18 +147,34 @@ public class AuthenticationService {
         
         return java.time.Duration.between(LocalDateTime.now(), lockUntil).getSeconds();
     }
-    
-    /**
-     * Encripta la contraseña utilizando SHA-256
-     */
-    private byte[] encryptPassword(String password) {
+    private String encryptPassword(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return digest.digest(password.getBytes());
+            byte[] hashedBytes = digest.digest(password.getBytes());
+            
+            // Convertir a representación hexadecimal
+            StringBuilder hexString = new StringBuilder();
+            for (byte hashedByte : hashedBytes) {
+                String hex = Integer.toHexString(0xff & hashedByte);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error al encriptar la contraseña", e);
         }
     }
+    // /**
+    //  * Encripta la contraseña utilizando SHA-256
+    //  */
+    // private byte[] encryptPassword(String password) {
+    //     try {
+    //         MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    //         return digest.digest(password.getBytes());
+    //     } catch (NoSuchAlgorithmException e) {
+    //         throw new RuntimeException("Error al encriptar la contraseña", e);
+    //     }
+    // }
     
     public String getUsername() {
         return username;
