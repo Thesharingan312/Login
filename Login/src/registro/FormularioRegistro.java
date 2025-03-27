@@ -218,7 +218,7 @@ public class FormularioRegistro extends JFrame {
 
         // Cargar ícono personalizado
         try {
-            ImageIcon icono = new ImageIcon(getClass().getResource("/resources/icono.png"));
+            ImageIcon icono = new ImageIcon(getClass().getResource("/icono.png"));
             if (icono.getImage() != null) {
                 setIconImage(icono.getImage());
             } else {
