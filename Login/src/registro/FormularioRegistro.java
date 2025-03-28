@@ -223,7 +223,7 @@ public class FormularioRegistro extends JFrame {
                 JOptionPane.showMessageDialog(this, 
                     "El usuario ya existe. Por favor, elija otro nombre.", 
                     "Error de Registro", 
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE);}
         }
     }
     /**
