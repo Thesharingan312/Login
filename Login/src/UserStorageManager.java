@@ -11,8 +11,19 @@ public class UserStorageManager {
      * @param encryptedPassword Contraseña encriptada
      * @return true si el usuario se guardó con éxito, false si ya existe
      */
-    public static boolean saveUser(String username, String encryptedPassword) {
-        // Primero verificamos si el usuario ya existe
+    public static boolean saveUser (String username, String encryptedPassword) {
+        // Primero verificamos si el archivo de usuarios existe
+        File file = new File(USER_FILE_PATH);
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        // Verificamos si el usuario ya existe
         if (userExists(username)) {
             return false;
         }
@@ -34,6 +45,12 @@ public class UserStorageManager {
      * @return true si el usuario existe, false en caso contrario
      */
     public static boolean userExists(String username) {
+        // Primero verificamos si el archivo de usuarios existe
+        File file = new File(USER_FILE_PATH);
+        if (!file.exists()) {
+            return false;
+        }
+
         try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE_PATH))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -42,9 +59,6 @@ public class UserStorageManager {
                     return true;
                 }
             }
-        } catch (FileNotFoundException e) {
-            // Si el archivo no existe, significa que no hay usuarios
-            return false;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -57,7 +71,13 @@ public class UserStorageManager {
      * @param encryptedPassword Contraseña encriptada
      * @return true si las credenciales son válidas, false en caso contrario
      */
-    public static boolean validateUser(String username, String encryptedPassword) {
+    public static boolean validateUser (String username, String encryptedPassword) {
+        // Primero verificamos si el archivo de usuarios existe
+        File file = new File(USER_FILE_PATH);
+        if (!file.exists()) {
+            return false;
+        }
+
         try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE_PATH))) {
             String line;
             while ((line = reader.readLine()) != null) {

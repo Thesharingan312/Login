@@ -1,4 +1,3 @@
-import AuthenticationService;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -76,34 +75,6 @@ public class AuthenticationService {
         return UserStorageManager.saveUser(username, encryptedPassword);
     }
     
-    // /**
-    //  * Verifica las credenciales del usuario
-    //  */
-    // public boolean authenticate(String inputUsername, String inputPassword) {
-    //     // Verificar si la cuenta está bloqueada
-    //     if (isLocked()) {
-    //         return false;
-    //     }
-        
-    //     boolean isAuthenticated = inputUsername.equals(username) && 
-    //             Arrays.equals(encryptPassword(inputPassword), encryptedPassword);
-        
-    //     if (isAuthenticated) {
-    //         // Reiniciar contador de intentos fallidos si la autenticación es exitosa
-    //         resetFailedAttempts();
-    //         return true;
-    //     } else {
-    //         // Incrementar contador de intentos fallidos
-    //         failedAttempts++;
-            
-    //         // Bloquear la cuenta si se excede el número máximo de intentos
-    //         if (failedAttempts >= MAX_ATTEMPTS) {
-    //             lockAccount();
-    //         }
-            
-    //         return false;
-    //     }
-    // }
     
     /**
      * Verifica si la cuenta está bloqueada
@@ -164,21 +135,12 @@ public class AuthenticationService {
             throw new RuntimeException("Error al encriptar la contraseña", e);
         }
     }
-    // /**
-    //  * Encripta la contraseña utilizando SHA-256
-    //  */
-    // private byte[] encryptPassword(String password) {
-    //     try {
-    //         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-    //         return digest.digest(password.getBytes());
-    //     } catch (NoSuchAlgorithmException e) {
-    //         throw new RuntimeException("Error al encriptar la contraseña", e);
-    //     }
-    // }
-    
-    public String getUsername() {
-        return username;
-    }
+    /**
+     * Devuelve el nombre de usuario actual
+     * @return Nombre de usuario actual
+     */
+    public String getCurrentUsername() {
+        return username;}
     
     /**
      * Guarda el nombre de usuario para futuras sesiones
