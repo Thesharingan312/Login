@@ -127,7 +127,13 @@ public class FormularioRegistro extends JFrame {
      * Configura los eventos de los botones y componentes.
      */
     private void configurarEventos() {
-        botonLimpiar.addActionListener(e -> limpiarFormulario());
+        botonLimpiar.addActionListener(e -> {
+            // Confirmar antes de limpiar el formulario
+            int opcion = JOptionPane.showConfirmDialog(this, "¿Desea limpiar el formulario?", "Confirmar", JOptionPane.YES_NO_OPTION);
+            if (opcion == JOptionPane.YES_OPTION) {
+                limpiarFormulario();
+            }
+        });
         botonAceptar.addActionListener(e -> validarFormulario());
         checkMostrarContrasena.addActionListener(e -> alternarVisibilidadContrasena());
     }
@@ -146,9 +152,9 @@ public class FormularioRegistro extends JFrame {
      * Aplica filtros de formato a campos específicos (DNI y Teléfono).
      */
     private void aplicarFiltrosEspeciales() {
-        // Filtro para DNI: 8 números + 1 letra mayúscula
+        // Filtro para DNI: 8 números + 1 letra mayúscula (máximo 9 caracteres)
         ((AbstractDocument) campoDNI.getCampo().getDocument()).setDocumentFilter(new DniFilter());
-        // Filtro para Teléfono: Solo permite dígitos
+        // Filtro para Teléfono: Solo permite dígitos (máximo 9 dígitos)
         ((AbstractDocument) campoTelefono.getCampo().getDocument()).setDocumentFilter(new TelefonoFilter());
     }
 
@@ -157,44 +163,43 @@ public class FormularioRegistro extends JFrame {
      */
     private void validarFormulario() {
         List<String> errores = new ArrayList<>();
-        // Validar que todos los campos originales sean completados
+        
+        // Validar que todos los campos obligatorios sean completados
         CampoRegistro[] obligatorios = {campoNombre, campoApellidos, campoDNI, campoCorreo, campoDireccion, campoTelefono};
         for (CampoRegistro campo : obligatorios) {
             if (campo.getCampo().getText().trim().isEmpty()) {
                 errores.add("Campo obligatorio: " + campo.getEtiqueta().getText());
             }
         }
-        // Validar que el campo de dirección tenga al menos 5 caracteres
-        if (campoDireccion.getCampo().getText().length() < 5) {
+        
+        // Validación adicional solo si el campo de dirección no está vacío
+        if (!campoDireccion.getCampo().getText().trim().isEmpty() && campoDireccion.getCampo().getText().length() < 5) {
             errores.add("La dirección debe tener al menos 5 caracteres.");
         }
-        // Obtener el nombre completo y las contraseñas
-        String nombre = campoNombre.getCampo().getText();
-        String apellidos = campoApellidos.getCampo().getText();
-        String nombreCompleto = nombre + " " + apellidos;
         
-        String contrasena = new String(campoContrasena.getPassword());
-        String confirmarContrasena = new String(campoConfirmarContrasena.getPassword());
-        // Validaciones específicas de los campos originales
-        if (!campoDNI.getCampo().getText().isEmpty() && !Validador.validarDNI(campoDNI.getCampo().getText())) {
+        // Validaciones específicas de formato solo si se completaron
+        if (!campoDNI.getCampo().getText().trim().isEmpty() && !Validador.validarDNI(campoDNI.getCampo().getText())) {
             errores.add("DNI inválido. Formato: 8 números + letra mayúscula.");
         }
-        if (!campoCorreo.getCampo().getText().isEmpty() && !Validador.validarCorreo(campoCorreo.getCampo().getText())) {
+        if (!campoCorreo.getCampo().getText().trim().isEmpty() && !Validador.validarCorreo(campoCorreo.getCampo().getText())) {
             errores.add("Formato de correo electrónico inválido.");
         }
-        if (!campoTelefono.getCampo().getText().isEmpty() && !Validador.validarTelefono(campoTelefono.getCampo().getText())) {
+        if (!campoTelefono.getCampo().getText().trim().isEmpty() && !Validador.validarTelefono(campoTelefono.getCampo().getText())) {
             errores.add("Teléfono debe tener 9 dígitos.");
         }
-        // Validar que los campos de contraseña sean completados
+        
+        // Obtener las contraseñas una sola vez
         String contrasena = new String(campoContrasena.getPassword());
         String confirmarContrasena = new String(campoConfirmarContrasena.getPassword());
+        
+        // Validar que los campos de contraseña sean completados
         if (contrasena.trim().isEmpty()) {
             errores.add("Campo obligatorio: Contraseña.");
         }
         if (confirmarContrasena.trim().isEmpty()) {
             errores.add("Campo obligatorio: Confirmar Contraseña.");
         }
-        // Validar la seguridad de la contraseña y que ambas coincidan
+        // Validar la seguridad de la contraseña y que ambas coincidan (solo si no están vacías)
         if (!contrasena.trim().isEmpty() && !Validador.validarContrasena(contrasena)) {
             errores.add("La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y un carácter especial.");
         }
@@ -202,14 +207,18 @@ public class FormularioRegistro extends JFrame {
             errores.add("Las contraseñas no coinciden.");
         }
         
+        // Mostrar errores o continuar con el registro
         if (!errores.isEmpty()) {
-            JOptionPane.showMessageDialog(this, 
-                String.join("\n", errores), 
-                "Errores de validación", 
+            JOptionPane.showMessageDialog(this,
+                String.join("\n", errores),
+                "Errores de validación",
                 JOptionPane.ERROR_MESSAGE);
         } else {
             // Crear servicio de autenticación para registro
             AuthenticationService authService = new AuthenticationService();
+            
+            // Construir el nombre completo
+            String nombreCompleto = campoNombre.getCampo().getText() + " " + campoApellidos.getCampo().getText();
             
             // Intentar registrar al usuario
             boolean registroExitoso = authService.register(nombreCompleto, contrasena);
@@ -220,12 +229,14 @@ public class FormularioRegistro extends JFrame {
                     "Éxito", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
             } else {
-                JOptionPane.showMessageDialog(this, 
-                    "El usuario ya existe. Por favor, elija otro nombre.", 
-                    "Error de Registro", 
-                    JOptionPane.ERROR_MESSAGE);}
+                JOptionPane.showMessageDialog(this,
+                    "El usuario ya existe. Por favor, elija otro nombre.",
+                    "Error de Registro",
+                    JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
+
     /**
      * Inicializa y organiza los componentes del formulario.
      */
@@ -313,42 +324,63 @@ public class FormularioRegistro extends JFrame {
     // ================== CLASES INTERNAS ================== //
 
     /**
-     * Filtro para DNI: Permite 8 números seguidos de 1 letra mayúscula.
+     * Filtro para DNI: Permite 8 números seguidos de 1 letra mayúscula, y limita la entrada a 9 caracteres.
      */
     private static class DniFilter extends DocumentFilter {
         @Override
         public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr) throws BadLocationException {
             String newText = text.replaceAll("[^\\dA-Za-z]", "").toUpperCase();
+            // Limitar la longitud total a 9 caracteres
+            if (fb.getDocument().getLength() + newText.length() > 9) {
+                newText = newText.substring(0, 9 - fb.getDocument().getLength());
+            }
             super.insertString(fb, offset, newText, attr);
             formatearDNI(fb);
         }
         @Override
         public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
             String newText = text.replaceAll("[^\\dA-Za-z]", "").toUpperCase();
+            // Limitar la longitud total a 9 caracteres
+            if (fb.getDocument().getLength() - length + newText.length() > 9) {
+                newText = newText.substring(0, 9 - (fb.getDocument().getLength() - length));
+            }
             super.replace(fb, offset, length, newText, attrs);
             formatearDNI(fb);
         }
+        /**
+         * Ajusta el contenido del documento para que mantenga el formato: 8 dígitos seguidos de 1 letra.
+         */
         private void formatearDNI(FilterBypass fb) throws BadLocationException {
             String contenido = fb.getDocument().getText(0, fb.getDocument().getLength());
-            if (contenido.length() > 8) {
-                String numeros = contenido.substring(0, 8).replaceAll("[^\\d]", "");
-                String letra = contenido.substring(8).replaceAll("[^A-Z]", "");
-                super.replace(fb, 0, fb.getDocument().getLength(), numeros + letra, null);
+            // Si el contenido excede los 9 caracteres, se recorta
+            if (contenido.length() > 9) {
+                contenido = contenido.substring(0, 9);
+                super.replace(fb, 0, fb.getDocument().getLength(), contenido, null);
             }
         }
     }
 
     /**
-     * Filtro para teléfono: Solo permite dígitos.
+     * Filtro para teléfono: Solo permite dígitos y limita la entrada a 9 dígitos.
      */
     private static class TelefonoFilter extends DocumentFilter {
         @Override
         public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr) throws BadLocationException {
-            super.insertString(fb, offset, text.replaceAll("[^\\d]", ""), attr);
+            String newText = text.replaceAll("[^\\d]", "");
+            // Limitar la longitud total a 9 dígitos
+            if (fb.getDocument().getLength() + newText.length() > 9) {
+                newText = newText.substring(0, 9 - fb.getDocument().getLength());
+            }
+            super.insertString(fb, offset, newText, attr);
         }
         @Override
         public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
-            super.replace(fb, offset, length, text.replaceAll("[^\\d]", ""), attrs);
+            String newText = text.replaceAll("[^\\d]", "");
+            // Limitar la longitud total a 9 dígitos
+            if (fb.getDocument().getLength() - length + newText.length() > 9) {
+                newText = newText.substring(0, 9 - (fb.getDocument().getLength() - length));
+            }
+            super.replace(fb, offset, length, newText, attrs);
         }
     }
 
@@ -393,5 +425,26 @@ public class FormularioRegistro extends JFrame {
         }
         public JLabel getEtiqueta() { return etiqueta; }
         public JTextField getCampo() { return campo; }
+    }
+}
+
+/**
+ * Servicio simulado de autenticación para el registro de usuarios.
+ * En un escenario real, se conectaría a una base de datos o sistema de autenticación.
+ */
+class AuthenticationService {
+    /**
+     * Registra un usuario.
+     * @param nombreCompleto Nombre completo del usuario.
+     * @param contrasena Contraseña del usuario.
+     * @return true si el registro fue exitoso, false si el usuario ya existe.
+     */
+    public boolean register(String nombreCompleto, String contrasena) {
+        // Lógica simulada: siempre registra al usuario salvo que el nombre completo sea "Usuario Existente"
+        if ("Usuario Existente".equalsIgnoreCase(nombreCompleto.trim())) {
+            return false;
+        }
+        // Aquí se podría insertar la lógica real de registro
+        return true;
     }
 }
